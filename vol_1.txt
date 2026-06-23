@@ -6,6 +6,18 @@ From single user to million:
 
 Single user:
 Figure 1.1 in Page 6, everything is on a single server (web app, database, cache), also look at the DNS.
+(
+Network Side quest: 
+When I enter an IP in the browser does DNS run anyway?
+No DNS is not run as the browser already has a location to fetch information from. Athough for other kinds of request using network utility like ping, traceroute, etc it performs a reverse look up to find domain name associated with the IP so that it can display a readable name. The domain ip mapping may also be cached in the device OS local cache.
+How is reverse IP performed?
+The translation takes place using a special DNS record called a pointer (PTR) record. The DNS server reads domain name from right to left (example: com then google), hence the IP must be reversed. So 192.0.2.1 becomes 1.2.0.192.
+Then the system appends a specific pointer domain called in-addr.arpa. So the system look up 1.2.0.192.in-addr.arpa
+Potential issues with using IPs directly:
+For HTTP, the request to sent to port 80.
+For HTTPS the browser hits port 443, which will initiate a TLS(transport layer security) handshake to secure the connection. Most SSL(secure socket layer) / TLS layer are bound to domain names and not IP.
+So when the server responds with it certificate the browser will see that the certificate name does not match the IP resulting in 'Your connection is not private' (NET::ERR_CERT_COMMON_NAME_INVALID) warning. (Side Side note: SSL/TLS certificate are issue by certificate authorities which are trusted third party organization that verify the identity of the certificate applicant before issuing degital credentials)
+)
 
 
 In an interview should I ask the load
