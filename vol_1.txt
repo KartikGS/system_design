@@ -1,3 +1,12 @@
 System requirement, constraint and bottleneck should be well understood.
 
-CHAPTER 1 NEXT
+CHAPTER 1
+
+From single user to million:
+
+Single user:
+Figure 1.1 in Page 6, everything is on a single server (web app, database, cache), also look at the DNS.
+
+
+In an interview should I ask the load
+Watch a video
