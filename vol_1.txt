@@ -1,0 +1,3 @@
+System requirement, constraint and bottleneck should be well understood.
+
+CHAPTER 1 NEXT
