@@ -8,7 +8,7 @@ Single user:
 Figure 1.1 in Page 6, everything is on a single server (web app, database, cache), also look at the DNS.
 
 Scaling to more than single user:
-[Flash card]One server not enough, need multiple:
+One server not enough, need multiple:
 one for web/mobile traffic (web tier) and other for the database (data tier), allows them to be scaled independently. Page 8 figure 1.3.
 
 In an interview should I ask the load
