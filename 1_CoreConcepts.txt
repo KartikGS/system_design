@@ -1,0 +1,41 @@
+1. Network Essentials
+
+Choosing communication protocol: for most systems, default to HTTP over TCP, it is well understood, works everywhere and handles 90% of use cases.
+
+SSE vs Web Sockets: 
+Server Streamed Events (SSE) are unidirectional where the client makes the initial HTTP request to open the connection and the server pushes data down that connection like live score or notification.
+Web Sockets handle true bidirectional communication where both sides send message freely like chat or collaboration. SSE is simpler to implement and works well with the standard HTTP infrastructure.
+Chose web sockets only when bidirectional communication required as it add significant complexity for maintaining stateful complexity at scale.
+
+Both are stateful hence cannot use standard load balancer.
+
+gRPC can be used for internal server to server communication, uses binary serialization and HTTP/2, significantly faster that JSON over HTTP. Can use externally as browsers don't have native gRPC support.
+REST for external APIs and gRPC internally.
+
+L7 / Layer 7 load balancers operates at the application level and route request based on HTTP request content.
+(
+The AWS example: The AWS ALB is an L7 load balancer. It runs health checks against the tasks (example fargate task) registered against it target, and routes request based on a algorithm like rouhd robin or least outstanding request.
+The fargate task may be managed by ECS, which acts as control pane for tasks, deciding when to start or kill them and registers task ips against the ALB target group.
+Based on the ip registered in the target group the ALB will distribute the load according to the algorithm it is operating on.
+)
+L4 Load balancer work at TCP level (Transport Layer), faster but dummer, distribute without looking at content. For web sockets L4 load balancing. 
+
+Geography and Latency:
+For low latency globally, regional deployments with data replication or partitioned by geography. CDNs, serve static content from servers close to the users.
+
+2. API Design:
+
+REST APIs. Spend 2-4 minutes describing 4-5 key endpoints. Example GET /user/{id}, POST /events/{id}/bookings
+A few key concepts: Pagination if returning large result set, Cursor based for real time data where items get added frequently, otherwise offset based is fine. JWT tokens for user session, API keys for service to service. If system prone to bots and abuse rate limiting.
+
+3. DATA MODELING:
+Relational vs NoSQL.
+Relational - structured data with clear relationship and need strong consistency. Normalization spliting data across table to avoid duplication. Denormalization is duplication to avoid joins, issue is now you have to update all the duplicated records incase lets say a username changes. This is a worth it trade off for a read heavy system where data rarely changes.
+In interview default to normalize and denormalize specific hotpaths if you identify read performance issues 
+NoSQl - dynamic schema, need to scale horizontally without complex joins.
+Need to decide partition and sort keys. For social media the query post by X user common hence user id as partition keys, but now post containing certain hastag needs scanning the entire table. We need to know all the queries before the design.
+
+4. DATABASE INDEXING:
+Makes queries faster. B-trees (sorted data stored in a tree structure) supports exact lookup and range queries(used in most DBs). Hash index faster but does not support range. Other specialized index like full text index(finding document containing a word) and geospatial index (restraunt within 5 miles).
+In interviews index fields queried frequently. Compound index maybe required if more than one index found.
+For specialized needs beyond what the primary DB supports, external system required. ElasticSearch for full text search. PostGIS for geospatial. These sync via change data capture (CDC) and hence lag slighlty behind primary DB. This tradeoff is acceptable as the primary DB does not have these capabilities.
