@@ -29,7 +29,7 @@ REST APIs. Spend 2-4 minutes describing 4-5 key endpoints. Example GET /user/{id
 A few key concepts: Pagination if returning large result set, Cursor based for real time data where items get added frequently, otherwise offset based is fine. JWT tokens for user session, API keys for service to service. If system prone to bots and abuse rate limiting.
 
 3. DATA MODELING:
-Relational vs NoSQL.
+Relational(mysql, postgres) vs NoSQL(dynomodb, mongodb).
 Relational - structured data with clear relationship and need strong consistency. Normalization spliting data across table to avoid duplication. Denormalization is duplication to avoid joins, issue is now you have to update all the duplicated records incase lets say a username changes. This is a worth it trade off for a read heavy system where data rarely changes.
 In interview default to normalize and denormalize specific hotpaths if you identify read performance issues 
 NoSQl - dynamic schema, need to scale horizontally without complex joins.
@@ -39,3 +39,11 @@ Need to decide partition and sort keys. For social media the query post by X use
 Makes queries faster. B-trees (sorted data stored in a tree structure) supports exact lookup and range queries(used in most DBs). Hash index faster but does not support range. Other specialized index like full text index(finding document containing a word) and geospatial index (restraunt within 5 miles).
 In interviews index fields queried frequently. Compound index maybe required if more than one index found.
 For specialized needs beyond what the primary DB supports, external system required. ElasticSearch for full text search. PostGIS for geospatial. These sync via change data capture (CDC) and hence lag slighlty behind primary DB. This tradeoff is acceptable as the primary DB does not have these capabilities.
+
+5. CACHING
+When database is getting hammered with reads, store frequently accessed data that doesn't change frequently in fast memory like redis. Cache hit on redis takes 2ms compared to 20-50ms on db query. For millions request that 20 to 50x speed up matters. This reduces load on DB letting it handle more write request and avoiding scaling premeturely.
+90% of time, cache-aside with redis pattern will be used. On read, check cache, if data present - return else query db, store in cache with TTL and return.
+For invalidation you can invalidate immediately after writes, short TTLs, accept some staleness or combine both. 
+Cache Stampedes: when a popular read cache expires, many concurrent request miss at the same time and pile onto db which can spike and take the system down. This can be prevented using Locking(only one request goes to the db while others wait), early recomputation(refresh before expiry) or staggering TTLs so all entries don't expire at once. 
+Full cache outage: If redis goes down all the request will hit the database, defense is small in progress fallback cache, circuit breakers to shed load or graceful degradation until redis recovers.
+CDN caching different, static assets like image, video, js files served from edge location close to user. In process cache for small data that change rarely like feature flag or config data. For core application data, external caching with redis is default.
