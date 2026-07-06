@@ -1,5 +1,4 @@
-1. Network Essentials
-
+1. NETWORK ESSENTIALS:
 Choosing communication protocol: for most systems, default to HTTP over TCP, it is well understood, works everywhere and handles 90% of use cases.
 
 SSE vs Web Sockets: 
@@ -23,8 +22,7 @@ L4 Load balancer work at TCP level (Transport Layer), faster but dummer, distrib
 Geography and Latency:
 For low latency globally, regional deployments with data replication or partitioned by geography. CDNs, serve static content from servers close to the users.
 
-2. API Design:
-
+2. API DESIGN:
 REST APIs. Spend 2-4 minutes describing 4-5 key endpoints. Example GET /user/{id}, POST /events/{id}/bookings
 A few key concepts: Pagination if returning large result set, Cursor based for real time data where items get added frequently, otherwise offset based is fine. JWT tokens for user session, API keys for service to service. If system prone to bots and abuse rate limiting.
 
@@ -40,10 +38,40 @@ Makes queries faster. B-trees (sorted data stored in a tree structure) supports 
 In interviews index fields queried frequently. Compound index maybe required if more than one index found.
 For specialized needs beyond what the primary DB supports, external system required. ElasticSearch for full text search. PostGIS for geospatial. These sync via change data capture (CDC) and hence lag slighlty behind primary DB. This tradeoff is acceptable as the primary DB does not have these capabilities.
 
-5. CACHING
+5. CACHING:
 When database is getting hammered with reads, store frequently accessed data that doesn't change frequently in fast memory like redis. Cache hit on redis takes 2ms compared to 20-50ms on db query. For millions request that 20 to 50x speed up matters. This reduces load on DB letting it handle more write request and avoiding scaling premeturely.
 90% of time, cache-aside with redis pattern will be used. On read, check cache, if data present - return else query db, store in cache with TTL and return.
 For invalidation you can invalidate immediately after writes, short TTLs, accept some staleness or combine both. 
 Cache Stampedes: when a popular read cache expires, many concurrent request miss at the same time and pile onto db which can spike and take the system down. This can be prevented using Locking(only one request goes to the db while others wait), early recomputation(refresh before expiry) or staggering TTLs so all entries don't expire at once. 
 Full cache outage: If redis goes down all the request will hit the database, defense is small in progress fallback cache, circuit breakers to shed load or graceful degradation until redis recovers.
 CDN caching different, static assets like image, video, js files served from edge location close to user. In process cache for small data that change rarely like feature flag or config data. For core application data, external caching with redis is default.
+
+6. SHARDING:
+Split data across servers. Happens when hitting storage limits, write throughput limits and read throughput limits of a single DB. Important decision is deciding shard key. Data split based on this key.
+Shard key is hashed and modulo used to pick shard (Hash based sharding). Distributes data evenly and avoids hotspots. In Range based sharding (each company accesses its own data), it is easy to create hotspots. Directory based sharding - lookup table decides where data lives, flexible but adds dependency and latency to every request.
+Don't shard to early, 10k writes per second and 100GB of data no sharding required, most of the time read replicas are enough.
+Problems: cross shard transactions nearly impossible, need to design shard boundaries to avoid them. Updates on different shards need distributed transactions or sagas which are complex and slow. Resharding is painful.
+In interview bring up sharding if you have justified why single database won't work, state the shard key and the trade offs (faster queries, slower queries)
+
+7. CONSISTENT HASHING:
+In hash based distribution hask(key)%N, when N changes on addition or removal every key will be mapped to a new server and data would need to be moved around.
+Consistent hashing represents keys and dbs on a virtual ring. Here N>no of servers. Key is hashed to find the starting point on the ring and we move clockwise till we find a server. So when we add a server only some data on the next server need to move and on removal data needs to move to the next server. So before 90% of data needed to move now only 10% needs to move.
+This pattern shows up in distributed caches (memcached and redis cluster) to distribute keys accross cache nodes, distributed dbs (cassandra and dynomodb) for sharding, load balancers to distribute request, CDNs to route request to edge servers.
+In interviews explanation not required.
+
+8. CAP THEOREM:
+How data behaves during failures. Theorem states you can only have 2 of 3 properties at once: Consistency(all nodes have same data), Availability(every request gets server) or Partition tolerance (system works even when network connection fails between nodes) and since network partition is unavoidable in distributed systems, you choosing between consistency and availability.
+For consistency the nodes won't serve request until it is upto date, for availability you will server every request even if stale data is present. Availability is default for most application.
+Systems like social media, recommendations, analytics dashboard operate fine with eventual consistency where system guarentees convergence on the same state given enough time with no new updates. Difference from weak consistency where there is no such guarantee of such convergence. Strong consistency for inventory, banking and booking systems.
+No need to pick on model for the entire system.
+CAP theorem only describes behaviour during network partitions. Real trade off is between consistency and latency captured by PACELC theorem: during Partition chose Availability or Consistency, Else chose Latency or Consistency.
+
+9. NUMBERS TO KNOW:
+Latency numbers: Memory access - nanoseconds, SSD - microseconds, Network call within data center - 1 to 10 milliseconds, cross continent call - 10 to 100s milliseconds
+Do capacity calculation when needed: if asked how many servers, you respond, we expect 50k request per second, each server can handle maybe 5k request, so 10 server plus some head room.
+Postgres can handle few terabytes comfortably, you don't need sharding until you hit 10s or 100s or terabytes.
+
+Cache - <1ms latency, 100k+ operation/second, memory bound upto 1TB - scale when cache hit<80%, latency > 1ms, memory usage > 80%, cache churn/thrashing
+Database - upto 50K transactions/second, <5ms read latency(cached), 64 TB storage capacity - scale when write throughput>10K TPS(throughput per second), read latency>5ms uncached, geographic distribution required.
+App servers - 100k+concurrent connections, 8-64 cores @ 2-4 GHz, 64 to 512GB RAM standard upto 2TB - scale when CPU utilization > 70%, response latency > SLA, connection near 100k per instance, memory >80%
+Message queue - upto 1 million msg/sec per broker, sub 5ms end to end latency, upto 50TB storage - throughput near 800k msg/sec, partition count 200k per cluster, growing customer lag.
