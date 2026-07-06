@@ -8,7 +8,7 @@ Chose web sockets only when bidirectional communication required as it add signi
 
 Both are stateful hence cannot use standard load balancer.
 
-gRPC can be used for internal server to server communication, uses binary serialization and HTTP/2, significantly faster that JSON over HTTP. Can use externally as browsers don't have native gRPC support.
+gRPC can be used for internal server to server communication, uses binary serialization and HTTP/2, significantly faster that JSON over HTTP. Can't use externally as browsers don't have native gRPC support.
 REST for external APIs and gRPC internally.
 
 L7 / Layer 7 load balancers operates at the application level and route request based on HTTP request content.
