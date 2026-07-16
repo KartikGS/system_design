@@ -45,6 +45,7 @@ For invalidation you can invalidate immediately after writes, short TTLs, accept
 Cache Stampedes: when a popular read cache expires, many concurrent request miss at the same time and pile onto db which can spike and take the system down. This can be prevented using Locking(only one request goes to the db while others wait), early recomputation(refresh before expiry) or staggering TTLs so all entries don't expire at once. 
 Full cache outage: If redis goes down all the request will hit the database, defense is small in progress fallback cache, circuit breakers to shed load or graceful degradation until redis recovers.
 CDN caching different, static assets like image, video, js files served from edge location close to user. In process cache for small data that change rarely like feature flag or config data. For core application data, external caching with redis is default.
+Cache eviction policies: https://bytebytego.com/guides/most-popular-cache-eviction/
 
 6. SHARDING:
 Split data across servers. Happens when hitting storage limits, write throughput limits and read throughput limits of a single DB. Important decision is deciding shard key. Data split based on this key.
